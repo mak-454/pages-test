@@ -1,0 +1,402 @@
+swagger: '2.0'
+info:
+  title: DKube API server
+  version: '0.1'
+schemes:
+  - https
+host: '35.247.21.0:32222'
+basePath: /dkube/automl
+consumes:
+  - application/keyauth.api.v1+json
+  - application/json
+produces:
+  - application/json
+securityDefinitions:
+  d3apikey:
+    type: apiKey
+    in: header
+    name: Authorization
+    description: Dkube JWT token for api access
+paths:
+  '/automl':
+    post:
+      operationId: dkube_automl_run_create
+      security:
+        - d3apikey: []
+      summary: API to create an autoML run in dkube
+      parameters:
+        - name: data
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/AutoMLRun'
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              response:
+                $ref: '#/definitions/ApiResponse'
+        default:
+          description: Error
+          schema:
+            $ref: '#/definitions/ApiError'
+      
+    get:
+      operationId: dkube_automl_run_list_or_get
+      security:
+        - d3apikey: []
+      summary: API to fetch the DKube autoML run(s)
+      parameters:
+        - name: runid
+          in: query
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            type: object
+            properties:
+              response:
+                $ref: '#/definitions/ApiResponse'
+              data:
+                type: array
+                items:
+                  $ref: '#/definitions/AutoMLRun'
+        default:
+          description: Error
+          schema:
+            $ref: '#/definitions/ApiError'
+
+definitions:
+  AutoMLRun:
+    type: object
+    description: Schema for an AutoML run in dkube.
+    properties:
+      name:
+        type: string
+        
+      controller:
+        type: string
+        enum:
+          - autosklearn
+          - tpot
+          - h2oautoml
+          - katib
+      
+      container:
+        $ref: '#/definitions/ContainerImage'
+      train_data:
+        type: string
+      test_data:
+        type: string
+
+      katib_opts:
+        type: object
+        properties:
+          algorithm:
+            type: string
+            enum:
+              - bayesian_optimization
+              - cma_evolution_strategy
+              - grid
+              - hyperband
+              - random
+              - tpe
+              
+          objective:
+            type: object
+            properties:
+              goal:
+                type: string
+              flag:
+                type: string
+                enum:
+                  - maximize
+                  - minimize
+              metric:
+                type: string
+  
+          algorithm_settings:
+            type: object
+            properties:
+              custom:
+                type: array
+                items:
+                  properties:
+                    key:
+                      type: string
+                    value:
+                      type: string
+          tuning_parameters:
+            type: object
+            properties:
+              parameters:
+                type: array
+                items:
+                  properties:
+                    key:
+                      type: string
+                    value:
+                      type: string
+          scorer:
+            $ref: '#/definitions/ContainerImage'
+                      
+      h2oautoml_opts:
+        type: object
+        properties:
+          server:
+            type: string
+          objective:
+            type: object
+            properties:
+              metric:
+                type: string
+                enum:
+                  - auto
+                  - deviance
+                  - log_loss
+                  - mse
+                  - rmse
+                  - mae
+                  - rmsle
+                  - auc
+                  - aucpr
+          algorithm_settings:
+            type: object
+            properties:
+              target_column:
+                type: string
+              exclude_algos:
+                type: string
+                enum:
+                  - drf
+                  - glm
+                  - xgboost
+                  - gbm
+                  - deeplearning
+                  - stackedensemble
+              custom:
+                type: array
+                items:
+                  properties:
+                    key:
+                      type: string
+                    value:
+                      type: string
+                      
+          scorer:
+            type: object
+            properties:
+              metric:
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - r2_score
+                    - mean_squared_error
+                    - mean_absolute_error
+                    - mean_squared_log_error
+      tpot_opts:
+        type: object
+        properties:
+          algorithm:
+            type: string
+            enum:
+              - classification
+              - regression
+          objective:
+            type: object
+            properties:
+              metric:
+                type: string
+                enum:
+                  - neg_median_absolute_error
+                  - neg_mean_absolute_error
+                  - neg_mean_sqaured_error
+                  - r2
+          algorithm_settings:
+            type: object
+            properties:
+              target_column:
+                type: string
+              custom:
+                type: array
+                items:
+                  properties:
+                    key:
+                      type: string
+                    value:
+                      type: string
+              file:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  content:
+                    type: string
+          scorer:
+            type: object
+            properties:
+              metric:
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - accuracy
+                    - auc
+                    - f1_score
+                    - log_loss
+                    - precision
+                    - recall
+      autosklearn_opts:
+        type: object
+        properties:
+          algorithm:
+            type: string
+            enum:
+              - classification
+              - regression
+          objective:
+            type: object
+            properties:
+              metric:
+                type: string
+                enum:
+                  - accuracy
+                  - f1
+                  - log_loss
+                  - precision
+                  - recall
+          algorithm_settings:
+            type: object
+            properties:
+              target_column:
+                type: string
+              exclude_algos:
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - adaboost
+                    - bernoulli_nb
+                    - decision_tree
+                    - extra_trees
+                    - gaussian_nb
+                    - gradient_boosting
+                    - k_nearest_neighbours
+                    - lda
+                    - liblinear_svc
+                    - libsvm_svc
+                    - multinomial_nb
+                    - passive_aggressive
+                    - QDA
+                    - random_forest
+                    - sgd
+              exclude_preprocessors:
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - densifier
+                    - extra_trees_preproc_for_classification
+                    - extra_trees_preproc_for_regression
+                    - fast_ica
+                    - feature_agglomeration
+                    - kernal_sinks
+                    - liblinear_svc_preprocessor
+                    - no_preprocessing
+                    - nystroem_sampler
+                    - pca
+                    - polynomical
+                    - random_trees_embedding
+                    - select_percentile_classification
+                    - select_percentile_regression
+                    - select_rates
+                    - truncated_svd
+              custom:
+                type: array
+                items:
+                  properties:
+                    key:
+                      type: string
+                    value:
+                      type: string
+          scorer:
+            type: object
+            properties:
+              metric:
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - accuracy
+                    - auc
+                    - f1_score
+                    - log_loss
+                    - precision
+                    - recall
+      generated:
+        type: object
+        properties:
+          status:
+            $ref: '#/definitions/ResourceStatus'
+          timestamps:
+            $ref: '#/definitions/Timestamps'
+          private:
+            type: string
+
+  ContainerImage:
+    type: object
+    properties:
+      registry:
+        type: string
+        enum:
+          - ecr
+          - gcr
+          - docker
+      image:
+        type: string
+      creds:
+        type: string
+        
+  ResourceStatus:
+    type: object
+    properties:
+      state:
+        type: string
+      message:
+        type: string
+      code:
+        type: string
+        
+  Timestamps:
+    type: object
+    properties:
+      created_at:
+        type: string
+      updated_at:
+        type: string
+      completed_at:
+        type: string
+
+  ApiResponse:
+    type: object
+    description: Schema for a generic response of dkube APIs on Success.
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+      uuid:
+        type: string
+  ApiError:
+    type: object
+    description: Schema for a generic response of dkube APIs on Failure.
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
